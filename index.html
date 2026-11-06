@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CyberVR SOC · Simulador en primera persona</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="vr-fade"></div>
+  <div id="audio-widget" aria-label="Controles de audio"></div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-card hud-player">
+      <div class="hud-name" id="hud-name">—</div>
+      <div class="hud-rank" id="hud-rank">Pasante</div>
+      <div class="xp"><div class="xp-fill" id="xp-fill"></div></div>
+      <div class="hud-xp" id="hud-xp">0 XP</div>
+    </div>
+    <div class="hud-card hud-objective">
+      <div class="label">OBJETIVO ACTUAL</div>
+      <div id="hud-objective">—</div>
+      <div class="steps" id="hud-steps"></div>
+    </div>
+    <div id="crosshair"></div>
+    <div id="prompt" class="hidden"></div>
+    <div id="toasts"></div>
+    <div class="hud-help">WASD moverse · Shift correr · Mouse mirar · E interactuar · M música · N pista · Esc pausa</div>
+  </div>
+
+  <!-- Pantalla inicial -->
+  <div id="intro" class="overlay">
+    <div class="panel intro-panel">
+      <div class="vr-badge">VR · TRAINING PROGRAM</div>
+      <h1>CyberVR <span>SOC</span></h1>
+      <p class="lead">
+        Eres estudiante de <b>Ingeniería de Sistemas</b> y hoy empiezas tus prácticas en
+        <b>CyberCorp S.A.S.</b> Te pones las gafas de realidad virtual y entras a la empresa.
+        Tu misión: pasar por cada puesto del <b>Centro de Operaciones de Seguridad (SOC)</b>,
+        practicar en el <b>Laboratorio de Redes</b>, resolver casos reales y aprobar el examen final para obtener tu certificado.
+      </p>
+      <ol class="path">
+        <li>Inducción con la mentora</li>
+        <li>Teoría de redes</li>
+        <li>Lab: ponchar cables</li>
+        <li>Lab: armar la red</li>
+        <li>Lab completo: del encendido al cierre</li>
+        <li>Lab: diagnóstico de fallas</li>
+        <li>Phishing</li>
+        <li>SIEM / Logs</li>
+        <li>Firewall</li>
+        <li>Threat Hunting</li>
+        <li>Respuesta a incidentes</li>
+        <li>Examen final + certificado</li>
+      </ol>
+      <label for="player-name">Tu nombre (aparecerá en el certificado)</label>
+      <input id="player-name" maxlength="40" placeholder="Ej: Daniel Pérez" autocomplete="off">
+      <div class="controls-grid">
+        <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Moverse</div>
+        <div><kbd>Shift</kbd> Correr</div>
+        <div><kbd>Mouse</kbd> Mirar</div>
+        <div><kbd>E</kbd> Interactuar</div>
+        <div><kbd>Esc</kbd> Pausa / liberar mouse</div>
+        <div><kbd>M</kbd> Música <kbd>N</kbd> Cambiar pista</div>
+      </div>
+      <div class="row">
+        <button id="btn-start" class="btn primary">Ponerse las gafas VR</button>
+        <button id="btn-reset" class="btn ghost">Reiniciar progreso</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pausa -->
+  <div id="pause" class="overlay hidden">
+    <div class="panel pause-panel">
+      <h2>Simulación en pausa</h2>
+      <p>Haz clic en cualquier parte para volver al SOC</p>
+    </div>
+  </div>
+
+  <!-- Modal de misiones -->
+  <div id="modal" class="overlay hidden">
+    <div class="panel modal-panel">
+      <header>
+        <div>
+          <div class="modal-station" id="modal-station"></div>
+          <h2 id="modal-title"></h2>
+        </div>
+        <button id="modal-close" class="btn ghost">✕ Salir</button>
+      </header>
+      <div id="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Certificado -->
+  <div id="cert" class="overlay hidden">
+    <div class="cert-wrap">
+      <div class="certificate" id="certificate">
+        <div class="cert-border">
+          <div class="cert-logo">🛡 CyberCorp S.A.S. · Academia SOC</div>
+          <div class="cert-kicker">CERTIFICADO DE FORMACIÓN PRÁCTICA</div>
+          <h1 class="cert-title">Operaciones de Ciberseguridad (SOC)</h1>
+          <p>Se certifica que</p>
+          <div class="cert-name" id="cert-name">—</div>
+          <p class="cert-text">
+            completó satisfactoriamente el programa práctico de formación en un Centro de Operaciones
+            de Seguridad en entorno de Realidad Virtual, aprobando los módulos de:
+          </p>
+          <div class="cert-modules" id="cert-modules"></div>
+          <div class="cert-meta">
+            <div><span>Examen final</span><b id="cert-score"></b></div>
+            <div><span>Fecha</span><b id="cert-date"></b></div>
+            <div><span>Código de verificación</span><b id="cert-id"></b></div>
+          </div>
+          <div class="cert-sign">
+            <div><div class="line"></div>Director del SOC</div>
+            <div><div class="line"></div>Coordinación Académica · Ing. de Sistemas</div>
+          </div>
+        </div>
+      </div>
+      <div class="cert-actions">
+        <button id="btn-print" class="btn primary">Imprimir / Guardar PDF</button>
+        <button id="btn-cert-close" class="btn ghost">Volver al SOC</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
