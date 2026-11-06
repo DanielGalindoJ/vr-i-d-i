@@ -380,8 +380,8 @@ code { font-family: var(--mono); color: var(--cyan); background: rgba(0, 229, 25
 .tool-btn.pw.on { color: var(--green); background: none; }
 .mdix { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); margin-left: auto; }
 .mdix input { width: auto; }
-.wb-topo { position: relative; flex: 1 1 52%; min-height: 220px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: radial-gradient(circle at 50% 30%, #0e1a2e, #050a14); }
-.wb-topo svg { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; }
+.wb-topo { position: relative; display: flex; flex-direction: column; flex: 1 1 52%; min-height: 220px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: radial-gradient(circle at 50% 30%, #0e1a2e, #050a14); }
+.wb-topo svg { display: block; flex: 1 1 0; width: 100%; min-height: 0; touch-action: none; user-select: none; }
 .dv { cursor: pointer; }
 .dv rect { fill: #101a2c; stroke: #2f4a6e; stroke-width: 1.5; }
 .dv:hover rect { stroke: var(--cyan); }
@@ -417,7 +417,7 @@ code { font-family: var(--mono); color: var(--cyan); background: rgba(0, 229, 25
 .wb-pop button:hover:not(:disabled) { border-color: var(--cyan); }
 .wb-pop button:disabled { opacity: 0.4; cursor: default; }
 .wb-note {
-  position: absolute; left: 8px; right: 8px; bottom: 6px; padding: 5px 10px; border-radius: 8px; font-size: 12px; pointer-events: none;
+  flex: none; min-height: 28px; padding: 5px 12px; font-size: 12px; border-top: 1px solid var(--line);
   background: rgba(5, 12, 24, 0.82); color: var(--text);
 }
 .wb-note.bad { color: #ffc2cc; border-left: 3px solid var(--red); font-weight: 400; }
@@ -440,6 +440,8 @@ code { font-family: var(--mono); color: var(--cyan); background: rgba(0, 229, 25
 .wb-tabs button.on { color: var(--cyan); border-color: var(--line); background: rgba(0, 229, 255, 0.1); }
 .wb-panel { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
 .wb-term { flex: 1; height: auto; min-height: 240px; border: none; border-radius: 0; }
+.term-in span { flex: none; white-space: nowrap; }
+.term-in input { flex: 1; min-width: 0; }
 .term-out .hint { color: var(--amber); }
 .term-out .muted-line { color: var(--muted); }
 .wb-off, .wb-empty { padding: 22px; line-height: 1.55; color: #c3d2ee; overflow: auto; }

@@ -368,11 +368,11 @@ makeRack(-27.2, 3);
 makeRack(-27.2, 1.6);
 makeRack(-27.2, 0.2);
 
-// Rollos de cable sobre la mesa de cableado
-[[0x2a7bd8, -18.5], [0xd86a2a, -17.9], [0x35b56a, -17.3]].forEach(([c, x]) => {
+// Rollos de cable junto a la mesa de cableado
+[[0x2a7bd8, -2.9], [0xd86a2a, -2.5], [0x35b56a, -2.1]].forEach(([c, z]) => {
   const spool = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.2, 18), new THREE.MeshStandardMaterial({ color: c, roughness: 0.6 }));
   spool.rotation.x = Math.PI / 2;
-  spool.position.set(x, 0.95, -2.1);
+  spool.position.set(-16.45, 0.15, z);
   scene.add(spool);
 });
 makePoster(
@@ -421,6 +421,10 @@ function makeStation(mid, x, z) {
   const lbl = makeLabel(m.short, '', '#00e5ff', 2.4);
   lbl.position.set(0, 2.05, 0);
   g.add(lbl);
+  // Zona invisible: permite interactuar aunque se mire de frente, entre monitores y etiqueta.
+  const hitZone = new THREE.Mesh(new THREE.BoxGeometry(2.1, 2.3, 1), new THREE.MeshBasicMaterial({ visible: false }));
+  hitZone.position.y = 1.15;
+  g.add(hitZone);
   scene.add(g);
   colliders.push({ minX: x - 1.05, maxX: x + 1.05, minZ: z - 0.5, maxZ: z + 0.5 });
   stationScreens[mid] = screenMat;

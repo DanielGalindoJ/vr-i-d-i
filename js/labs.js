@@ -597,9 +597,16 @@ function workbench(el, opts) {
       const used = portInUse(net, d.id, p);
       return `<button data-port="${p}" ${used ? 'disabled' : ''}>${p}${used ? ' · ocupado' : ''}</button>`;
     }).join('');
-    pop.style.left = (d.x / 800) * 100 + '%';
-    pop.style.top = (d.y / 440) * 100 + '%';
     pop.classList.remove('hidden');
+    // Ubica el menú junto al equipo, sin salirse del área del diagrama.
+    const area = pop.parentElement.getBoundingClientRect();
+    const r = svg.getBoundingClientRect();
+    const scale = Math.min(r.width / 800, r.height / 440);
+    const left = r.left - area.left + (r.width - 800 * scale) / 2 + d.x * scale;
+    const top = r.top - area.top + (r.height - 440 * scale) / 2 + d.y * scale;
+    const halfW = pop.offsetWidth / 2 + 4;
+    pop.style.left = Math.max(halfW, Math.min(area.width - halfW, left)) + 'px';
+    pop.style.top = Math.max(4, Math.min(area.height - pop.offsetHeight - 18, top)) + 'px';
     pop.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
       pop.classList.add('hidden');
       onPick(b.dataset.port);
