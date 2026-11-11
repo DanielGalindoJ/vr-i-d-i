@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { MISSIONS, EXTRAS, TOTAL_XP, rankFor } from './missions.js';
 import { audio, mountAudioWidget } from './audio.js';
+import { createVR } from './vr.js';
 
 const $ = (s) => document.querySelector(s);
 const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
@@ -54,7 +55,14 @@ scene.fog = new THREE.Fog(0x04070d, 16, 45);
 const camera = new THREE.PerspectiveCamera(72, window.innerWidth / window.innerHeight, 0.05, 120);
 camera.rotation.order = 'YXZ';
 const PLAYER_H = 1.7;
-camera.position.set(0, PLAYER_H, 22);
+// El "rig" es el cuerpo del jugador: se mueve por el mundo y la cámara (cabeza) va dentro.
+// En VR las gafas mueven la cámara dentro del rig; en escritorio la movemos nosotros.
+const rig = new THREE.Group();
+rig.position.set(0, 0, 22);
+rig.add(camera);
+scene.add(rig);
+camera.position.set(0, PLAYER_H, 0);
+const headPos = new THREE.Vector3();
 let yaw = 0;
 let pitch = 0;
 
@@ -659,6 +667,7 @@ function toast(msg) {
   $('#toasts').appendChild(d);
   setTimeout(() => d.classList.add('out'), 4500);
   setTimeout(() => d.remove(), 5100);
+  vr.toast(msg);
 }
 
 // ================================================================
@@ -669,6 +678,41 @@ let locked = false;
 let started = false;
 let modalOpen = false;
 let certOpen = false;
+let vrResume = false; // volver a VR al cerrar la misión
+
+const vr = createVR({
+  renderer,
+  camera,
+  rig,
+  blocked,
+  onSelect: () => tryInteract(),
+  onStart: () => {
+    unlock();
+    // Mantener la orientación que traía el jugador en escritorio
+    rig.rotation.y = yaw;
+    pitch = 0;
+    for (const k in keys) keys[k] = false;
+    updatePause();
+  },
+  onEnd: () => {
+    // Pasar la posición y orientación de la cabeza al modo escritorio
+    camera.getWorldPosition(headPos);
+    const e = new THREE.Euler().setFromQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()), 'YXZ');
+    rig.position.set(headPos.x, 0, headPos.z);
+    rig.rotation.y = 0;
+    yaw = e.y;
+    pitch = 0;
+    updatePause();
+  },
+});
+
+// Tras cerrar una misión/certificado: vuelve a VR si veníamos de ahí, si no, bloquea el mouse.
+function resume() {
+  if (vrResume) {
+    vrResume = false;
+    vr.enter();
+  } else lock();
+}
 
 function lock() {
   if (!started || modalOpen || certOpen) return;
@@ -681,7 +725,7 @@ function unlock() {
   if (document.pointerLockElement) document.exitPointerLock();
 }
 function updatePause() {
-  $('#pause').classList.toggle('hidden', locked || !started || modalOpen || certOpen);
+  $('#pause').classList.toggle('hidden', locked || vr.presenting || !started || modalOpen || certOpen);
 }
 
 document.addEventListener('pointerlockchange', () => {
@@ -720,6 +764,7 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => (keys[e.code] = false));
 
 window.addEventListener('resize', () => {
+  if (renderer.xr.isPresenting) return;
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -735,7 +780,16 @@ let lastPromptKey = '';
 
 function updatePrompt() {
   focused = null;
-  if (locked) {
+  let hitDist = null;
+  if (vr.presenting) {
+    vr.setRaycaster(ray);
+    const hit = ray.intersectObjects(interactRoots, true)[0];
+    if (hit) {
+      focused = hit.object.userData.mid || null;
+      hitDist = hit.distance;
+    }
+    vr.setRayHit(hitDist, focused && isUnlocked(focused));
+  } else if (locked) {
     ray.setFromCamera(center, camera);
     const hit = ray.intersectObjects(interactRoots, true)[0];
     if (hit) focused = hit.object.userData.mid || null;
@@ -746,6 +800,7 @@ function updatePrompt() {
   const p = $('#prompt');
   if (!focused) {
     p.className = 'hidden';
+    vr.setPrompt('');
     return;
   }
   const m = getMission(focused);
@@ -753,9 +808,11 @@ function updatePrompt() {
     const prev = isExtra(focused) ? getMission('induccion') : MISSIONS[missionIndex(focused) - 1];
     p.className = 'locked';
     p.innerHTML = `🔒 <b>${m.station}</b> — primero completa: ${prev.title}`;
+    vr.setPrompt(p.innerHTML, true);
   } else {
     p.className = '';
     p.innerHTML = `<kbd>E</kbd> ${m.action} · <b>${m.station}</b>${isDone(focused) && !isExtra(focused) ? ' <span class="done">✔ completada (modo práctica)</span>' : ''}`;
+    vr.setPrompt(p.innerHTML, false);
   }
 }
 
@@ -774,6 +831,11 @@ function tryInteract() {
 function openMission(id) {
   const m = getMission(id);
   modalOpen = true;
+  // El DOM no se ve dentro de las gafas: salimos a la vista 2D del navegador para la misión.
+  if (vr.presenting) {
+    vrResume = true;
+    vr.exit();
+  }
   unlock();
   updatePause();
   audio.setFocus(true);
@@ -835,7 +897,7 @@ function completeMission(m, score = 100) {
   $('#btn-continue').addEventListener('click', () => {
     closeModal();
     if (m.id === 'examen') showCert();
-    else lock();
+    else resume();
   });
 }
 
@@ -847,7 +909,7 @@ function closeModal() {
 }
 $('#modal-close').addEventListener('click', () => {
   closeModal();
-  lock();
+  resume();
 });
 
 // ================================================================
@@ -855,6 +917,10 @@ $('#modal-close').addEventListener('click', () => {
 // ================================================================
 function showCert() {
   certOpen = true;
+  if (vr.presenting) {
+    vrResume = true;
+    vr.exit();
+  }
   unlock();
   updatePause();
   $('#cert-name').textContent = state.name || 'Estudiante';
@@ -871,7 +937,7 @@ $('#btn-cert-close').addEventListener('click', () => {
   certOpen = false;
   $('#cert').classList.add('hidden');
   updatePause();
-  lock();
+  resume();
 });
 
 // ================================================================
@@ -905,7 +971,10 @@ $('#btn-start').addEventListener('click', () => {
   void fade.offsetWidth;
   fade.classList.add('on');
   refreshWorld();
-  lock();
+  vr.showButton = true;
+  vr.refreshButton();
+  if (vr.supported) vr.enter();
+  else lock();
   setTimeout(() => {
     if (!state.done.length) toast(`👋 Bienvenido/a a CyberCorp, <b>${state.name}</b>. Habla con Laura, la mentora, en la recepción.`);
     else toast(`Bienvenido/a de nuevo, <b>${state.name}</b>. Sigue la baliza azul.`);
@@ -946,7 +1015,9 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
 
-  if (locked) {
+  if (vr.presenting) {
+    vr.update(dt);
+  } else if (locked) {
     const speed = keys.ShiftLeft || keys.ShiftRight ? 6 : 3.4;
     let f = 0;
     let s = 0;
@@ -962,27 +1033,31 @@ function animate() {
       const cos = Math.cos(yaw);
       const dx = (-sin * f + cos * s) * speed * dt;
       const dz = (-cos * f - sin * s) * speed * dt;
-      const nx = camera.position.x + dx;
-      if (!blocked(nx, camera.position.z)) camera.position.x = nx;
-      const nz = camera.position.z + dz;
-      if (!blocked(camera.position.x, nz)) camera.position.z = nz;
+      const nx = rig.position.x + dx;
+      if (!blocked(nx, rig.position.z)) rig.position.x = nx;
+      const nz = rig.position.z + dz;
+      if (!blocked(rig.position.x, nz)) rig.position.z = nz;
       bobT += dt * speed * 2.2;
     }
   }
-  camera.position.y = PLAYER_H + Math.sin(bobT) * 0.035;
-  camera.rotation.set(pitch, yaw, 0);
+  // En VR la cabeza la mueven las gafas; en escritorio, el mouse.
+  if (!vr.presenting) {
+    camera.position.set(0, PLAYER_H + Math.sin(bobT) * 0.035, 0);
+    camera.rotation.set(pitch, yaw, 0);
+  }
+  camera.getWorldPosition(headPos);
 
   // Puerta
   doorMesh.position.y += (doorTargetY - doorMesh.position.y) * Math.min(1, dt * 2);
 
   // NPCs miran al jugador
   npcs.forEach((n, i) => {
-    n.rotation.y = Math.atan2(camera.position.x - n.position.x, camera.position.z - n.position.z);
+    n.rotation.y = Math.atan2(headPos.x - n.position.x, headPos.z - n.position.z);
     n.children[1].scale.y = 1 + Math.sin(t * 2 + i) * 0.015;
   });
 
   // Música según la sala
-  audio.setZone(camera.position.x < -12 ? 'lab' : camera.position.z > 10 ? 'lobby' : 'soc');
+  audio.setZone(headPos.x < -12 ? 'lab' : headPos.z > 10 ? 'lobby' : 'soc');
 
   // LED de los racks
   for (const led of rackLeds) led.visible = Math.sin(t * led.userData.rate + led.userData.phase) > -0.35;
@@ -1001,7 +1076,7 @@ function animate() {
   updatePrompt();
   // Con un laboratorio abierto el 3D es solo fondo: 10 fps bastan y la interfaz responde mejor.
   renderAcc += dt;
-  if (modalOpen && renderAcc < 0.1) return;
+  if (modalOpen && !vr.presenting && renderAcc < 0.1) return;
   renderAcc = 0;
   renderer.render(scene, camera);
 }
