@@ -240,6 +240,7 @@ export function createVR({ renderer, camera, rig, blocked, onSelect, onStart, on
   const rotM = new THREE.Matrix4();
   function setRaycaster(ray) {
     const c = activeCtrl || controllers[0];
+    ray.camera = camera; // los letreros (Sprite) lo necesitan para el raycast
     rotM.identity().extractRotation(c.matrixWorld);
     ray.ray.origin.setFromMatrixPosition(c.matrixWorld);
     ray.ray.direction.set(0, 0, -1).applyMatrix4(rotM);
