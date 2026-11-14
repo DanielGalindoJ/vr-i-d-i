@@ -27,6 +27,7 @@ export function quiz(questions, { pass = 0.7, pick = 0, title = '' } = {}) {
     const show = () => {
       const q = qs[i];
       const opts = shuffle(q.o.map((t, k) => ({ t, ok: k === q.a })));
+      el.ariaQuiz = { q: q.q, opts }; // ARIA lee la pregunta actual para dar pistas
       el.innerHTML = `
         ${title ? `<div class="sub-title">${title}</div>` : ''}
         <div class="q-progress">

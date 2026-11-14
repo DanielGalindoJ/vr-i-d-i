@@ -24,6 +24,7 @@ Luego abre <http://localhost:8000> en un navegador de escritorio con WebGL. Se n
 | `Shift` | Correr |
 | Mouse | Mirar |
 | `E` | Interactuar |
+| `H` | Abrir o cerrar a ARIA, la asistente |
 | `M` | Activar o silenciar la música |
 | `N` | Cambiar de pista |
 | `Esc` | Pausar o salir de una estación |
@@ -57,6 +58,18 @@ Los laboratorios funcionan sobre un simulador propio, no sobre respuestas predef
 - **Protocolos y funciones:** IPv4, ARP, VLAN con trunk, subinterfaces, rutas estáticas, DHCP, NAT con sobrecarga y DNS.
 - **Consolas:** comandos de red al estilo de Cisco IOS en routers y switches, y comandos de Windows como `ipconfig`, `ping`, `tracert` y `nslookup` en los equipos finales.
 
+## ARIA, asistente de ayuda
+
+ARIA acompaña al estudiante durante todo el recorrido. Funciona 100% en el navegador, sin servicios externos ni claves de API.
+
+- **Sabe dónde está el jugador:** lee la pantalla de la misión (pregunta actual, objetivo pendiente del laboratorio, fase o paso) y su posición en el mundo 3D.
+- **Pistas en 3 niveles:** primero orienta, luego da una pista concreta (en los quizzes, un comodín 50/50) y al final casi la respuesta.
+- **Ayuda proactiva:** aparece sola si el estudiante falla 3 veces seguidas, lleva más de 75 s sin avanzar en una misión o más de 2 min sin llegar a la siguiente estación; en ese caso le indica hacia dónde caminar.
+- **Chat:** entiende preguntas libres por palabras clave (DNS, NAT, VLAN, T568B, firewall, "¿qué hago?", "¿dónde está el firewall?"…) y nunca entrega la respuesta directa.
+- **Voz:** puede leer sus mensajes con `speechSynthesis` y, en Chrome, escuchar preguntas por micrófono. La voz y la ayuda automática se activan o desactivan desde el panel.
+
+Para ampliar lo que sabe ARIA, se agregan entradas `{ k: [palabras clave], a: 'respuesta' }` al arreglo `KB` de `js/assistant.js`.
+
 ## Tecnologías
 
 - HTML, CSS y JavaScript con módulos ES, sin frameworks ni dependencias que instalar.
@@ -75,6 +88,7 @@ js/labs.js       Laboratorios y mesa de trabajo
 js/netsim.js     Simulador de red
 js/netcli.js     Consolas de comandos
 js/audio.js      Música y efectos de sonido
+js/assistant.js  ARIA: pistas, chat y ayuda proactiva
 ```
 
 ## Limitaciones

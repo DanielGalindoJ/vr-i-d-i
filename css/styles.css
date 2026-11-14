@@ -571,3 +571,62 @@ code { font-family: var(--mono); color: var(--cyan); background: rgba(0, 229, 25
   .cert-actions { display: none; }
   .certificate { box-shadow: none; width: 100%; }
 }
+/* ================================================================
+   ARIA · asistente
+   ================================================================ */
+#aria { position: fixed; right: 18px; bottom: 18px; z-index: 45; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; pointer-events: none; }
+#aria > * { pointer-events: auto; }
+#aria-fab {
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 30px; cursor: pointer;
+  background: rgba(5, 12, 24, 0.92); color: var(--text); border: 1px solid var(--cyan); font-size: 15px; font-family: inherit;
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.25); transition: 0.15s;
+}
+#aria-fab:hover { box-shadow: 0 0 30px rgba(0, 229, 255, 0.55); }
+#aria-fab b { color: var(--cyan); }
+#aria-fab kbd { font-size: 11px; padding: 0 5px; min-width: 0; }
+.aria-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); }
+#aria.ping #aria-fab { animation: ariaPing 0.4s 3; }
+#aria.open #aria-fab { display: none; }
+@keyframes ariaPing { 50% { transform: scale(1.08); box-shadow: 0 0 36px rgba(0, 229, 255, 0.9); } }
+
+#aria-bubble {
+  width: 340px; background: rgba(5, 12, 24, 0.96); border: 1px solid var(--cyan); border-radius: 14px 14px 4px 14px;
+  padding: 12px 14px; font-size: 14px; line-height: 1.5; animation: toastIn 0.3s ease-out;
+}
+.aria-bubble-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.aria-bubble-actions button, #aria-chips button {
+  background: rgba(0, 229, 255, 0.08); color: var(--cyan); border: 1px solid var(--line); border-radius: 20px;
+  padding: 5px 11px; font-size: 13px; cursor: pointer; font-family: inherit;
+}
+.aria-bubble-actions button:hover, #aria-chips button:hover { border-color: var(--cyan); }
+.aria-bubble-actions button[data-act="close"] { margin-left: auto; color: var(--muted); }
+
+#aria-panel {
+  width: min(400px, calc(100vw - 36px)); height: min(540px, calc(100vh - 120px)); display: flex; flex-direction: column;
+  background: rgba(6, 12, 24, 0.97); border: 1px solid var(--cyan); border-radius: 16px; overflow: hidden;
+  box-shadow: 0 0 50px rgba(0, 229, 255, 0.2); animation: toastIn 0.25s ease-out;
+}
+#aria-panel header { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); background: linear-gradient(90deg, rgba(0, 229, 255, 0.1), transparent); }
+.aria-avatar { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; background: rgba(0, 229, 255, 0.12); border: 1px solid var(--cyan); }
+.aria-title { flex: 1; display: flex; flex-direction: column; line-height: 1.2; }
+.aria-title b { color: var(--cyan); letter-spacing: 1px; }
+.aria-title small { color: var(--muted); font-size: 12px; }
+#aria-panel header button { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; padding: 4px; }
+#aria-panel header button:hover { color: var(--text); }
+#aria-msgs { flex: 1; overflow: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.aria-msg { max-width: 88%; padding: 9px 12px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+.aria-msg.aria { align-self: flex-start; background: rgba(0, 229, 255, 0.07); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.aria-msg.user { align-self: flex-end; background: var(--cyan); color: #021018; border-bottom-right-radius: 4px; }
+.aria-msg pre { background: #02060d; padding: 8px; border-radius: 6px; font-family: var(--mono); font-size: 12px; white-space: pre-wrap; margin: 6px 0 0; color: #b6f5c9; }
+.aria-lvl { display: inline-block; font-size: 11px; color: #021018; background: var(--amber); border-radius: 5px; padding: 0 6px; margin-right: 4px; font-weight: 700; }
+#aria-chips { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 14px 10px; }
+#aria-form { display: flex; gap: 6px; padding: 10px 12px; border-top: 1px solid var(--line); }
+#aria-form input { flex: 1; padding: 9px 12px; font-size: 14px; }
+#aria-form button { background: var(--cyan); color: #021018; border: none; border-radius: 10px; padding: 0 14px; cursor: pointer; font-size: 15px; }
+#aria-form #aria-mic { background: rgba(0, 229, 255, 0.1); color: var(--cyan); border: 1px solid var(--line); }
+#aria-mic.rec { background: var(--red) !important; color: #fff !important; animation: pulse 1s infinite; }
+
+/* Opciones descartadas por el comodín 50/50 */
+.opt.aria-discard { opacity: 0.4; text-decoration: line-through; }
+
+@media print { #aria { display: none !important; } }
