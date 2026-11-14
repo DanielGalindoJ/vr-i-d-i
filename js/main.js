@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { MISSIONS, EXTRAS, TOTAL_XP, rankFor } from './missions.js';
 import { audio, mountAudioWidget } from './audio.js';
 import { createVR } from './vr.js';
+import { createAssistant } from './assistant.js';
 
 const $ = (s) => document.querySelector(s);
 const rnd = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
@@ -679,6 +680,7 @@ let started = false;
 let modalOpen = false;
 let certOpen = false;
 let vrResume = false; // volver a VR al cerrar la misión
+let currentMissionId = null; // misión abierta (la usa ARIA)
 
 const vr = createVR({
   renderer,
@@ -728,6 +730,36 @@ function updatePause() {
   $('#pause').classList.toggle('hidden', locked || vr.presenting || !started || modalOpen || certOpen);
 }
 
+// ================================================================
+//  ARIA · asistente de ayuda (js/assistant.js)
+// ================================================================
+const ariaDir = new THREE.Vector3();
+const aria = createAssistant({
+  missions: ALL_STATIONS,
+  toast,
+  getState: () => ({ started, modalOpen, vr: vr.presenting, name: state.name, done: state.done }),
+  getMissionId: () => (modalOpen ? currentMissionId : null),
+  getNext: () => nextMission(),
+  getWorld: () => {
+    camera.getWorldPosition(headPos);
+    camera.getWorldDirection(ariaDir);
+    const len = Math.hypot(ariaDir.x, ariaDir.z) || 1;
+    return {
+      x: headPos.x,
+      z: headPos.z,
+      dx: ariaDir.x / len,
+      dz: ariaDir.z / len,
+      zone: headPos.x < -12 ? 'lab' : headPos.z > 10 ? 'lobby' : 'soc',
+      target: beacon.visible ? { x: beacon.position.x, z: beacon.position.z } : null,
+    };
+  },
+  // Para escribir en el chat hay que soltar el mouse; al cerrar, se vuelve al juego.
+  onOpen: () => unlock(),
+  onClose: () => {
+    if (!modalOpen && !certOpen) lock();
+  },
+});
+
 document.addEventListener('pointerlockchange', () => {
   locked = document.pointerLockElement === canvas;
   for (const k in keys) keys[k] = false;
@@ -749,6 +781,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'Escape' && modalOpen) closeModal();
   // Música: no se activa mientras se escribe en un campo de texto.
   if (!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) {
+    if (e.code === 'KeyH' && started) aria.toggle();
     if (e.code === 'KeyM') {
       audio.start();
       audio.toggleMusic();
@@ -831,6 +864,7 @@ function tryInteract() {
 function openMission(id) {
   const m = getMission(id);
   modalOpen = true;
+  currentMissionId = id;
   // El DOM no se ve dentro de las gafas: salimos a la vista 2D del navegador para la misión.
   if (vr.presenting) {
     vrResume = true;
